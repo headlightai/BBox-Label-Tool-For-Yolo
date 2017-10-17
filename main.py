@@ -145,8 +145,8 @@ class LabelTool():
         self.frame.rowconfigure(4, weight = 1)
 
         # for debugging
-##        self.setImage()
-        self.loadDir(True)
+        # self.setImage()
+        # self.loadDir(True)
 
     def loadDir(self, dbg = False):
         if not dbg:
