@@ -14,6 +14,8 @@ import ttk
 import os
 import glob
 import random
+import stat
+from shutil import copyfile, rmtree
 
 # colors for the bboxes
 COLORS = ['red', 'blue', 'olive', 'teal', 'cyan', 'green', 'black']
@@ -37,13 +39,14 @@ class LabelTool():
         self.outDir = ''
         self.cur = 0
         self.total = 0
-        self.category = 0
+        self.category = 1
         self.imagename = ''
         self.labelfilename = ''
         self.tkimg = None
         self.currentLabelclass = ''
         self.cla_can_temp = []
         self.classcandidate_filename = 'class.txt'
+        self.classes = []
 
         # initialize mouse state
         self.STATE = {}
@@ -62,6 +65,7 @@ class LabelTool():
         self.label = Label(self.frame, text = "Image Dir:")
         self.label.grid(row = 0, column = 0, sticky = E)
         self.entry = Entry(self.frame)
+        self.entry.insert(END, os.path.join(r'E:\Workspaces\temp\rtsp-image-capture\images'))
         self.entry.grid(row = 0, column = 1, sticky = W+E)
         self.ldBtn = Button(self.frame, text = "Load", command = self.loadDir)
         self.ldBtn.grid(row = 0, column = 2,sticky = W+E)
@@ -79,18 +83,22 @@ class LabelTool():
         # choose class
         self.classname = StringVar()
         self.classcandidate = ttk.Combobox(self.frame,state='readonly',textvariable=self.classname)
+        self.classcandidate.bind("<<ComboboxSelected>>", self.setClass)
         self.classcandidate.grid(row=1,column=2)
         if os.path.exists(self.classcandidate_filename):
-        	with open(self.classcandidate_filename) as cf:
-        		for line in cf.readlines():
-        			# print line
-        			self.cla_can_temp.append(line.strip('\n'))
+            with open(self.classcandidate_filename) as cf:
+                lines = cf.readlines()
+                self.classes = map(str.strip, lines)
+                print "Loaded classes: ", ' '.join(self.classes)
+                for line in self.classes:
+                    # print line
+                    self.cla_can_temp.append(line)
         #print self.cla_can_temp
         self.classcandidate['values'] = self.cla_can_temp
         self.classcandidate.current(0)
         self.currentLabelclass = self.classcandidate.get() #init
-        self.btnclass = Button(self.frame, text = 'ComfirmClass', command = self.setClass)
-        self.btnclass.grid(row=2,column=2,sticky = W+E)
+        # self.btnclass = Button(self.frame, text = 'ComfirmClass', command = self.setClass)
+        # self.btnclass.grid(row=2,column=2,sticky = W+E)
 
         # showing bbox info & delete bbox
         self.lb1 = Label(self.frame, text = 'Bounding boxes:')
@@ -138,27 +146,36 @@ class LabelTool():
 
         # for debugging
 ##        self.setImage()
-##        self.loadDir()
+        self.loadDir(True)
 
     def loadDir(self, dbg = False):
         if not dbg:
             s = self.entry.get()
             self.parent.focus()
-            self.category = int(s)
+            self.category = 1
         else:
-            s = r'D:\workspace\python\labelGUI'
+            s = r'E:\Workspaces\temp\rtsp-image-capture\images'
+
+        self.imageDir = s
+
+        # Generate yolo output
+        self.generateYoloOutputFolder()
+
 ##        if not os.path.isdir(s):
 ##            tkMessageBox.showerror("Error!", message = "The specified dir doesn't exist!")
 ##            return
         # get image list
-        self.imageDir = os.path.join(r'./Images', '%03d' %(self.category))
+        # self.imageDir = os.path.join(r'./Images', '%03d' %(self.category))
         #print self.imageDir 
         #print self.category
-        self.imageList = glob.glob(os.path.join(self.imageDir, '*.JPG'))
+        self.imageList = glob.glob(os.path.join(s, '*.JPG'))
         #print self.imageList
         if len(self.imageList) == 0:
             print 'No .JPG images found in the specified dir!'
             return
+
+        # Copy all images to working folder
+        self.copyAllImageToImagesFolder()
 
         # default to the 1st image in the collection
         self.cur = 1
@@ -232,6 +249,9 @@ class LabelTool():
             f.write('%d\n' %len(self.bboxList))
             for bbox in self.bboxList:
                 f.write(' '.join(map(str, bbox)) + '\n')
+        
+        self.saveToYoloOutput()
+
         print 'Image No. %d saved' %(self.cur)
 
 
@@ -308,9 +328,114 @@ class LabelTool():
             self.cur = idx
             self.loadImage()
 
-    def setClass(self):
+    def setClass(self, event):
     	self.currentLabelclass = self.classcandidate.get()
     	print 'set label class to :',self.currentLabelclass
+
+    def generateYoloOutputFolder(self):
+        self.yoloImagePath = os.path.join(r'./output/images')
+        if os.path.exists(self.yoloImagePath):
+            self.clean_dir(self.yoloImagePath)
+        os.makedirs(self.yoloImagePath)
+
+        self.yoloLabelsPath = os.path.join(r'./output/labels')
+        if os.path.exists(self.yoloLabelsPath):
+            self.clean_dir(self.yoloLabelsPath)
+        os.makedirs(self.yoloLabelsPath)
+
+        copyfile("class.txt", os.path.join(r'./output', 'name.list'))
+
+        # generate all class folder
+        self.generateCategoryDir()
+
+    def generateCategoryDir(self):
+        with open("class.txt") as f:
+            lines = f.readlines()
+            for line in lines:
+                
+                # Auto create all class folder for images
+                path = os.path.join(r'./output/images', '%s' %(line.rstrip()))
+                if os.path.exists(path):
+                    self.clean_dir(path)
+                os.mkdir(path)
+
+                # Auto create all class folder for labels
+                path = os.path.join(r'./output/labels', '%s' %(line.rstrip()))
+                if os.path.exists(path):
+                    self.clean_dir(path)
+                os.mkdir(path)
+
+    def copyAllImageToImagesFolder(self):
+        imageWorkingDir = os.path.join(r'./Images', '%03d' %(self.category))
+        olds = glob.glob(os.path.join(imageWorkingDir, '*.JPG'))
+        if not os.path.exists(imageWorkingDir):
+            os.makedirs(imageWorkingDir)
+        for i in olds:
+            os.unlink(i)
+        olds = glob.glob(os.path.join(r'./Labels', '%03d' %(self.category), '*.txt'))
+        for i in olds:
+            os.unlink(i)
+
+        i = 1
+        for image in self.imageList:
+            copyfile(image, os.path.join(imageWorkingDir, ('%03d'%(i)) + ".JPG"))
+            i += 1
+
+    # clear dir
+    def clean_dir(self, location):
+        rmtree(location)
+
+    # reference from https://github.com/Guanghan/darknet/blob/master/scripts/convert.py (Thanks for Guanghan Ning <gnxr9@mail.missouri.edu>)
+    def saveToYoloOutput(self):
+        w = int(self.img.size[0])
+        h = int(self.img.size[1])
+
+        imageWorkingDir = os.path.join(r'./Images', '%03d' %(self.category))
+
+        # remove all exist labels
+        for clsss in self.classes:
+            labelsFile = os.path.join(self.yoloLabelsPath, clsss, ("%03d"%self.cur) + ".txt")
+            if os.path.exists(labelsFile):
+                os.unlink(labelsFile)
+
+        for bbox in self.bboxList:
+            print bbox
+            (x1, y1, x2, y2, c) = map(str, bbox)
+            print (w,h)
+            b = (float(x1), float(x2), float(y1), float(y2))
+            bb = self.convert((w,h), b)
+            print (bb)
+            cls_id = self.classes.index(c)
+
+            # Save Image
+            imagesFile = os.path.join(r'./output/images', ('%s' %(c)) , ("%03d"%self.cur) + ".JPG")
+            copyfile(os.path.join(imageWorkingDir, ("%03d"%self.cur) + ".JPG"), imagesFile)
+
+            # Save labels
+            labelsFile = os.path.join(self.yoloLabelsPath, c, ("%03d"%self.cur) + ".txt")
+            with open(labelsFile, 'a') as ll:
+                ll.write(str(cls_id) + " " + " ".join([str(a) for a in bb]) + '\n')
+
+        # update image lists
+        with open(os.path.join(r'./output/', "list.txt"), 'w') as ll:
+            for i in glob.glob(r'./output/images/**/*.JPG'):
+                ll.write(i.replace('\\', '/') + "\n")
+                
+
+    # reference from https://github.com/Guanghan/darknet/blob/master/scripts/convert.py (Thanks for Guanghan Ning <gnxr9@mail.missouri.edu>) 
+    def convert(self, size, box):
+        dw = 1./size[0]
+        dh = 1./size[1]
+        x = (box[0] + box[1])/2.0
+        y = (box[2] + box[3])/2.0
+        w = box[1] - box[0]
+        h = box[3] - box[2]
+        x = x*dw
+        w = w*dw
+        y = y*dh
+        h = h*dh
+        return (x,y,w,h)
+
 
 ##    def setImage(self, imagepath = r'test2.png'):
 ##        self.img = Image.open(imagepath)
