@@ -1,3 +1,2 @@
-dog
-cat
-baby
+AR-10000
+AR-13975SR

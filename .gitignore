@@ -1,0 +1,6 @@
+#Ignore directories
+extra/BBox/Labels
+extra/BBox/Images
+
+.vscode/*
+.vscode
