@@ -154,7 +154,7 @@ class LabelTool():
             self.parent.focus()
             self.category = 1
         else:
-            s = r'E:\Workspaces\temp\rtsp-image-capture\images'
+            s = r'.'
 
         self.imageDir = s
 
@@ -168,10 +168,10 @@ class LabelTool():
         # self.imageDir = os.path.join(r'./Images', '%03d' %(self.category))
         #print self.imageDir 
         #print self.category
-        self.imageList = glob.glob(os.path.join(s, '*.JPG'))
+        self.imageList = glob.glob(os.path.join(s, '*.jpg'))
         #print self.imageList
         if len(self.imageList) == 0:
-            print 'No .JPG images found in the specified dir!'
+            print 'No .jpg images found in the specified dir!'
             return
 
         # Copy all images to working folder
@@ -192,7 +192,7 @@ class LabelTool():
         print os.path.exists(self.egDir)
         if not os.path.exists(self.egDir):
             return
-        filelist = glob.glob(os.path.join(self.egDir, '*.JPG'))
+        filelist = glob.glob(os.path.join(self.egDir, '*.jpg'))
         self.tmp = []
         self.egList = []
         random.shuffle(filelist)
@@ -367,7 +367,7 @@ class LabelTool():
 
     def copyAllImageToImagesFolder(self):
         imageWorkingDir = os.path.join(r'./Images', '%03d' %(self.category))
-        olds = glob.glob(os.path.join(imageWorkingDir, '*.JPG'))
+        olds = glob.glob(os.path.join(imageWorkingDir, '*.jpg'))
         if not os.path.exists(imageWorkingDir):
             os.makedirs(imageWorkingDir)
         for i in olds:
@@ -378,7 +378,7 @@ class LabelTool():
 
         i = 1
         for image in self.imageList:
-            copyfile(image, os.path.join(imageWorkingDir, ('%03d'%(i)) + ".JPG"))
+            copyfile(image, os.path.join(imageWorkingDir, ('%03d'%(i)) + ".jpg"))
             i += 1
 
     # clear dir
@@ -408,8 +408,8 @@ class LabelTool():
             cls_id = self.classes.index(c)
 
             # Save Image
-            imagesFile = os.path.join(r'./output/images', ('%s' %(c)) , ("%03d"%self.cur) + ".JPG")
-            copyfile(os.path.join(imageWorkingDir, ("%03d"%self.cur) + ".JPG"), imagesFile)
+            imagesFile = os.path.join(r'./output/images', ('%s' %(c)) , ("%03d"%self.cur) + ".jpg")
+            copyfile(os.path.join(imageWorkingDir, ("%03d"%self.cur) + ".jpg"), imagesFile)
 
             # Save labels
             labelsFile = os.path.join(self.yoloLabelsPath, c, ("%03d"%self.cur) + ".txt")
@@ -418,7 +418,7 @@ class LabelTool():
 
         # update image lists
         with open(os.path.join(r'./output/', "list.txt"), 'w') as ll:
-            for i in glob.glob(r'./output/images/**/*.JPG'):
+            for i in glob.glob(r'./output/images/**/*.jpg'):
                 ll.write(i.replace('\\', '/') + "\n")
                 
 
