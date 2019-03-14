@@ -339,9 +339,9 @@ class LabelTool():
         os.makedirs(self.yoloImagePath)
 
         self.yoloLabelsPath = os.path.join(r'./output/labels')
-        if os.path.exists(self.yoloLabelsPath):
-            self.clean_dir(self.yoloLabelsPath)
-        os.makedirs(self.yoloLabelsPath)
+        if not os.path.exists(self.yoloLabelsPath):
+            #self.clean_dir(self.yoloLabelsPath)
+            os.makedirs(self.yoloLabelsPath)
 
         copyfile("class.txt", os.path.join(r'./output', 'name.list'))
 
@@ -362,8 +362,8 @@ class LabelTool():
                 # Auto create all class folder for labels
                 path = os.path.join(r'./output/labels', '%s' %(line.rstrip()))
                 if os.path.exists(path):
-                    self.clean_dir(path)
-                os.mkdir(path)
+                    #self.clean_dir(path)
+                    os.mkdir(path)
 
     def copyAllImageToImagesFolder(self):
         imageWorkingDir = os.path.join(r'./Images', '%03d' %(self.category))
@@ -373,8 +373,8 @@ class LabelTool():
         for i in olds:
             os.unlink(i)
         olds = glob.glob(os.path.join(r'./Labels', '%03d' %(self.category), '*.txt'))
-        for i in olds:
-            os.unlink(i)
+        #for i in olds:
+        #    os.unlink(i)
 
         i = 1
         for image in self.imageList:
@@ -395,8 +395,8 @@ class LabelTool():
         # remove all exist labels
         for clsss in self.classes:
             labelsFile = os.path.join(self.yoloLabelsPath, clsss, ("%03d"%self.cur) + ".txt")
-            if os.path.exists(labelsFile):
-                os.unlink(labelsFile)
+            #if os.path.exists(labelsFile):
+            #    os.unlink(labelsFile)
 
         for bbox in self.bboxList:
             print bbox
