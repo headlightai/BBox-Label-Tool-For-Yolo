@@ -361,7 +361,7 @@ class LabelTool():
 
                 # Auto create all class folder for labels
                 path = os.path.join(r'./output/labels', '%s' %(line.rstrip()))
-                if os.path.exists(path):
+                if not os.path.exists(path):
                     #self.clean_dir(path)
                     os.mkdir(path)
 
