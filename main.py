@@ -168,7 +168,7 @@ class LabelTool():
         # self.imageDir = os.path.join(r'./Images', '%03d' %(self.category))
         #print self.imageDir 
         #print self.category
-        self.imageList = glob.glob(os.path.join(s, '*.jpg'))
+        self.imageList = sorted(glob.glob(os.path.join(s, '*.jpg')))
         #print self.imageList
         if len(self.imageList) == 0:
             print 'No .jpg images found in the specified dir!'
@@ -252,7 +252,7 @@ class LabelTool():
         
         self.saveToYoloOutput()
 
-        print 'Image No. %d saved' %(self.cur)
+        print 'Image No. %d saved' %(int(self.imagename))
 
 
     def mouseClick(self, event):
@@ -394,7 +394,7 @@ class LabelTool():
 
         # remove all exist labels
         for clsss in self.classes:
-            labelsFile = os.path.join(self.yoloLabelsPath, clsss, ("%03d"%self.cur) + ".txt")
+            labelsFile = os.path.join(self.yoloLabelsPath, clsss, ("%03d"%int(self.imagename)) + ".txt")
             #if os.path.exists(labelsFile):
             #    os.unlink(labelsFile)
 
@@ -408,11 +408,11 @@ class LabelTool():
             cls_id = self.classes.index(c)
 
             # Save Image
-            imagesFile = os.path.join(r'./output/images', ('%s' %(c)) , ("%03d"%self.cur) + ".jpg")
-            copyfile(os.path.join(imageWorkingDir, ("%03d"%self.cur) + ".jpg"), imagesFile)
+            imagesFile = os.path.join(r'./output/images', ('%s' %(c)) , ("%03d"%int(self.imagename)) + ".jpg")
+            copyfile(os.path.join(imageWorkingDir, ("%03d"%int(self.imagename)) + ".jpg"), imagesFile)
 
             # Save labels
-            labelsFile = os.path.join(self.yoloLabelsPath, c, ("%03d"%self.cur) + ".txt")
+            labelsFile = os.path.join(self.yoloLabelsPath, c, ("%03d"%int(self.imagename)) + ".txt")
             with open(labelsFile, 'a') as ll:
                 ll.write(str(cls_id) + " " + " ".join([str(a) for a in bb]) + '\n')
 
